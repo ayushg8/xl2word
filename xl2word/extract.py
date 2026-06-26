@@ -3,7 +3,6 @@ import os
 import shutil
 import zipfile
 import openpyxl
-from openpyxl.utils import get_column_letter
 from .model import Workbook, Sheet, Cell, Style, MergedRange, ImageAsset
 from .cleaners import format_cell_value
 

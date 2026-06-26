@@ -18,7 +18,8 @@ def main(argv: list[str] | None = None) -> int:
     workdir = args.workdir or (os.path.splitext(args.output)[0] + "_work")
     wb = extract_workbook(args.input, workdir, render=not args.no_render)
     if args.layout:
-        plan = LayoutPlan.from_json(open(args.layout).read())
+        with open(args.layout) as f:
+            plan = LayoutPlan.from_json(f.read())
     else:
         plan = default_layout(wb)
     write_docx(wb, plan, args.output, images_dir=os.path.join(workdir, "images"))

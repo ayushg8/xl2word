@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 from docx import Document
 from docx.shared import Emu, Pt, RGBColor
-from docx.enum.section import WD_ORIENT
+from docx.enum.section import WD_ORIENT, WD_SECTION
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
@@ -22,17 +22,25 @@ def _new_document() -> Document:
     style.font.size = Pt(10)
     # Bind an East-Asian font so CJK glyphs render.
     rpr = style.element.get_or_add_rPr()
-    rfonts = rpr.find(qn("w:rFonts")) or OxmlElement("w:rFonts")
+    rfonts = rpr.get_or_add_rFonts()
     rfonts.set(qn("w:eastAsia"), _DEFAULT_FONT)
-    if rpr.find(qn("w:rFonts")) is None:
-        rpr.append(rfonts)
     return doc
 
 
-def _set_orientation(section, orientation: str) -> None:
-    if orientation == "landscape" and section.orientation != WD_ORIENT.LANDSCAPE:
-        section.orientation = WD_ORIENT.LANDSCAPE
+def _section_for(doc, orientation: str):
+    """Return a section in the requested orientation, starting a new section only
+    when the current one's orientation differs. Keeps an all-portrait document to
+    a single section while honoring per-block landscape requests."""
+    section = doc.sections[-1]
+    want_landscape = orientation == "landscape"
+    if want_landscape == (section.orientation == WD_ORIENT.LANDSCAPE):
+        return section
+    section = doc.add_section(WD_SECTION.NEW_PAGE)
+    target = WD_ORIENT.LANDSCAPE if want_landscape else WD_ORIENT.PORTRAIT
+    if section.orientation != target:
+        section.orientation = target
         section.page_width, section.page_height = section.page_height, section.page_width
+    return section
 
 
 def _usable_width_emu(section) -> int:
@@ -68,12 +76,6 @@ def _fixed_layout(table) -> None:
 
 def _set_cell_width(cell, width_emu: int) -> None:
     cell.width = Emu(width_emu)
-    tcPr = cell._tc.get_or_add_tcPr()
-    tcW = tcPr.find(qn("w:tcW")) or OxmlElement("w:tcW")
-    tcW.set(qn("w:w"), str(int(width_emu / 635)))   # EMU -> twips
-    tcW.set(qn("w:type"), "dxa")
-    if tcPr.find(qn("w:tcW")) is None:
-        tcPr.append(tcW)
 
 
 def _grid(sheet: Sheet, region):
@@ -111,10 +113,9 @@ def _add_table(doc, sheet: Sheet, block: Block) -> None:
     nrows, ncols = len(rows), (c1 - c0 + 1)
     if nrows == 0 or ncols == 0:
         return
-    section = doc.sections[-1]
+    section = _section_for(doc, block.orientation)
     text_rows = [[(cell.display if cell else "") for cell in row] for row in rows]
     natural = fit.natural_column_widths(text_rows, 10)
-    _set_orientation(section, block.orientation)
     usable = _usable_width_emu(section)
     widths = fit.fit_columns(natural, usable)
 
@@ -125,6 +126,11 @@ def _add_table(doc, sheet: Sheet, block: Block) -> None:
         for gj, mcell in enumerate(row):
             _apply_cell(table.cell(gi, gj), mcell)
             _set_cell_width(table.cell(gi, gj), widths[gj])
+    # Push the fitted widths onto the table grid so fit-to-page actually renders.
+    grid = table._tbl.find(qn("w:tblGrid"))
+    if grid is not None:
+        for gc, w_emu in zip(grid.findall(qn("w:gridCol")), widths):
+            gc.set(qn("w:w"), str(int(w_emu / 635)))   # EMU -> twips
     # Repeat header row across page breaks.
     _repeat_header(table.rows[0])
     # Apply merges that fall inside this region.
