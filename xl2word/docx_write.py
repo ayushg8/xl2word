@@ -39,6 +39,19 @@ def _usable_width_emu(section) -> int:
     return int(section.page_width - section.left_margin - section.right_margin)
 
 
+def _strip_extra_paragraphs(cell) -> None:
+    """Remove trailing empty paragraphs left by a cell merge."""
+    tc = cell._tc
+    paras = tc.findall(qn("w:p"))
+    while len(paras) > 1:
+        last = paras[-1]
+        if not "".join(t.text or "" for t in last.findall(".//" + qn("w:t"))):
+            tc.remove(last)
+            paras = tc.findall(qn("w:p"))
+        else:
+            break
+
+
 def _shade(cell, rgb: str) -> None:
     shd = OxmlElement("w:shd")
     shd.set(qn("w:val"), "clear")
@@ -120,6 +133,7 @@ def _add_table(doc, sheet: Sheet, block: Block) -> None:
             a = table.cell(m.min_row - r0, m.min_col - c0)
             b = table.cell(m.max_row - r0, m.max_col - c0)
             a.merge(b)
+            _strip_extra_paragraphs(a)
 
 
 def _repeat_header(row) -> None:

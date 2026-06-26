@@ -1,10 +1,11 @@
 from xl2word.layout import Block, LayoutPlan, default_layout
-from xl2word.model import Workbook, Sheet
+from xl2word.model import Workbook, Sheet, Cell, Style
 
 def test_default_layout_section_per_sheet():
+    _cell = Cell(row=1, col=1, value="x", display="x", style=Style())
     wb = Workbook(source="x", sheets=[
-        Sheet(name="Spec", index=0, max_row=3, max_col=3),
-        Sheet(name="Mixing", index=1, max_row=2, max_col=2),
+        Sheet(name="Spec", index=0, max_row=3, max_col=3, cells=[_cell]),
+        Sheet(name="Mixing", index=1, max_row=2, max_col=2, cells=[_cell]),
     ])
     plan = default_layout(wb)
     headings = [b.text for b in plan.blocks if b.kind == "heading"]

@@ -46,9 +46,14 @@ def default_layout(wb: Workbook) -> LayoutPlan:
         if i > 0:
             blocks.append(Block(kind="pagebreak"))
         blocks.append(Block(kind="heading", text=sheet.name, level=1))
-        if sheet.cells or sheet.max_row > 0:
+        if sheet.cells:
             blocks.append(Block(kind="table", sheet=sheet.name))
         for img in sheet.images:
+            blocks.append(Block(kind="image", path=img.path,
+                                caption=os.path.basename(img.path)))
+    # Workbook-level media not anchored to a sheet: append after the first sheet.
+    if not any(s.images for s in wb.sheets):
+        for img in wb.media:
             blocks.append(Block(kind="image", path=img.path,
                                 caption=os.path.basename(img.path)))
     title = os.path.splitext(os.path.basename(wb.source))[0]
