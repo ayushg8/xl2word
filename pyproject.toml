@@ -1,0 +1,19 @@
+[project]
+name = "xl2word"
+version = "0.1.0"
+description = "General Excel to Word converter: deterministic capture, Claude-driven layout."
+requires-python = ">=3.11"
+dependencies = ["openpyxl>=3.1", "python-docx>=1.1", "pymupdf>=1.24", "pillow>=10.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+xl2word = "xl2word.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["xl2word*"]
