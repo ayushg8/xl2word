@@ -26,7 +26,7 @@ def _cell_style(c) -> Style:
         fill = _rgb(c.fill.fgColor)
     border = False
     if c.border is not None:
-        border = any(getattr(c.border, side).style
+        border = any(getattr(getattr(c.border, side), "style", None)
                      for side in ("top", "bottom", "left", "right"))
     return Style(
         bold=bool(c.font and c.font.bold),

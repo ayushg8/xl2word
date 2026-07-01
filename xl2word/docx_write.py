@@ -108,16 +108,41 @@ def _apply_cell(docx_cell, model_cell: Cell | None) -> None:
             _shade(docx_cell, st.fill)
 
 
+def _pruned_axes(sheet: Sheet, rows, r0, c0, r1, c1):
+    """Return the original row and column numbers to keep after dropping rows and
+    columns that are fully empty within the region. A row or column that any merge
+    covers is always kept, so merges stay contiguous and remap cleanly."""
+    merges = [m for m in sheet.merged
+              if m.min_row >= r0 and m.max_row <= r1 and m.min_col >= c0 and m.max_col <= c1]
+    merge_rows, merge_cols = set(), set()
+    for m in merges:
+        merge_rows.update(range(m.min_row, m.max_row + 1))
+        merge_cols.update(range(m.min_col, m.max_col + 1))
+
+    def nonempty(cell):
+        return bool(cell and (cell.display or "").strip())
+
+    keep_rows = [r0 + gi for gi, row in enumerate(rows)
+                 if (r0 + gi) in merge_rows or any(nonempty(c) for c in row)]
+    keep_cols = [c0 + gj for gj in range(c1 - c0 + 1)
+                 if (c0 + gj) in merge_cols or any(nonempty(rows[gi][gj]) for gi in range(len(rows)))]
+    return keep_rows or [r0], keep_cols or [c0], merges
+
+
 def _add_table(doc, sheet: Sheet, block: Block) -> None:
-    rows, (r0, c0, r1, c1) = _grid(sheet, block.region)
-    nrows, ncols = len(rows), (c1 - c0 + 1)
-    if nrows == 0 or ncols == 0:
+    full_rows, (r0, c0, r1, c1) = _grid(sheet, block.region)
+    if len(full_rows) == 0 or (c1 - c0 + 1) == 0:
         return
+    keep_rows, keep_cols, merges = _pruned_axes(sheet, full_rows, r0, c0, r1, c1)
+    row_map = {orig: i for i, orig in enumerate(keep_rows)}
+    col_map = {orig: j for j, orig in enumerate(keep_cols)}
+    rows = [[full_rows[orig - r0][cc - c0] for cc in keep_cols] for orig in keep_rows]
+    nrows, ncols = len(rows), len(keep_cols)
+
     section = _section_for(doc, block.orientation)
     text_rows = [[(cell.display if cell else "") for cell in row] for row in rows]
-    natural = fit.natural_column_widths(text_rows, 10)
     usable = _usable_width_emu(section)
-    widths = fit.fit_columns(natural, usable)
+    widths = fit.balanced_column_widths(text_rows, usable, 10)
 
     table = doc.add_table(rows=nrows, cols=ncols)
     table.style = "Table Grid"
@@ -131,15 +156,23 @@ def _add_table(doc, sheet: Sheet, block: Block) -> None:
     if grid is not None:
         for gc, w_emu in zip(grid.findall(qn("w:gridCol")), widths):
             gc.set(qn("w:w"), str(int(w_emu / 635)))   # EMU -> twips
-    # Repeat header row across page breaks.
-    _repeat_header(table.rows[0])
-    # Apply merges that fall inside this region.
-    for m in sheet.merged:
-        if m.min_row >= r0 and m.max_row <= r1 and m.min_col >= c0 and m.max_col <= c1:
-            a = table.cell(m.min_row - r0, m.min_col - c0)
-            b = table.cell(m.max_row - r0, m.max_col - c0)
-            a.merge(b)
-            _strip_extra_paragraphs(a)
+    # Repeat the first row as a header across page breaks, unless it is a title
+    # banner (a lone cell merged across most of the width). Repeating a banner only
+    # makes the tall title overlap the data rows on every continuation page.
+    first_row = keep_rows[0]
+    nonempty_first = sum(1 for c in rows[0] if c and (c.display or "").strip())
+    wide_merge = any(m.min_row == first_row and (m.max_col - m.min_col + 1) >= ncols / 2
+                     for m in merges)
+    banner = nonempty_first <= 1 and wide_merge
+    if not banner:
+        _repeat_header(table.rows[0])
+    # Apply merges, remapped onto the pruned grid. Every row and column a merge
+    # covers is kept, so both corners are present.
+    for m in merges:
+        a = table.cell(row_map[m.min_row], col_map[m.min_col])
+        b = table.cell(row_map[m.max_row], col_map[m.max_col])
+        a.merge(b)
+        _strip_extra_paragraphs(a)
 
 
 def _repeat_header(row) -> None:
@@ -167,8 +200,17 @@ def write_docx(wb: Workbook, layout: LayoutPlan, out_path: str, images_dir: str)
     by_name = {s.name: s for s in wb.sheets}
     if layout.title:
         doc.add_heading(layout.title, level=0)
-    for block in layout.blocks:
+    for idx, block in enumerate(layout.blocks):
         if block.kind == "heading":
+            # Put the heading in the same section orientation as the table it
+            # introduces, so a landscape table does not leave its heading stranded
+            # on an otherwise empty portrait page.
+            for later in layout.blocks[idx + 1:]:
+                if later.kind == "table":
+                    _section_for(doc, later.orientation)
+                    break
+                if later.kind == "heading":
+                    break
             doc.add_heading(block.text or "", level=block.level or 1)
         elif block.kind == "table" and block.sheet in by_name:
             _add_table(doc, by_name[block.sheet], block)

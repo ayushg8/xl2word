@@ -25,3 +25,7 @@ def main(argv: list[str] | None = None) -> int:
     write_docx(wb, plan, args.output, images_dir=os.path.join(workdir, "images"))
     print(f"Wrote {args.output}")
     return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
