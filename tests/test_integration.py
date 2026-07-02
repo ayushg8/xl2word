@@ -11,7 +11,8 @@ def test_end_to_end_rich_sheet(build_rich_xlsx, tmp_path):
     doc = Document(out)
     assert len(doc.tables) == 1
     flat = [c.text for row in doc.tables[0].rows for c in row.cells]
-    assert "ESS LFP Cell Design" in flat
+    heading_texts = [p.text for p in doc.paragraphs if p.style.name.startswith("Heading")]
+    assert "ESS LFP Cell Design" in heading_texts  # banner promoted to a section heading
     assert "1.2%" in flat                        # percent display survived end-to-end
     # the embedded image was sweep-extracted and placed
     assert len(doc.inline_shapes) >= 1

@@ -17,14 +17,25 @@ def test_write_docx_builds_editable_table(build_simple_xlsx, tmp_path):
     assert "25.40" in flat            # display value preserved
     assert "Parameter" in flat
 
-def test_merged_header_is_merged(build_rich_xlsx, tmp_path):
+def test_full_width_banner_becomes_heading(build_rich_xlsx, tmp_path):
     wb = extract_semantic(build_rich_xlsx(with_image=False))
     out = str(tmp_path / "rich.docx")
     write_docx(wb, default_layout(wb), out, images_dir=str(tmp_path / "images"))
     doc = Document(out)
-    row0 = doc.tables[0].rows[0]
-    # A1:C1 merged -> the three grid cells resolve to one underlying cell
-    assert row0.cells[0]._tc is row0.cells[2]._tc
+    # A full-width merged banner is promoted to a section heading, not a table row.
+    heading_texts = [p.text for p in doc.paragraphs if p.style.name.startswith("Heading")]
+    assert "ESS LFP Cell Design" in heading_texts
+    flat = [c.text for row in doc.tables[0].rows for c in row.cells]
+    assert "ESS LFP Cell Design" not in flat
+
+def test_interior_merge_is_merged(build_rich_xlsx, tmp_path):
+    wb = extract_semantic(build_rich_xlsx(with_image=False))
+    out = str(tmp_path / "rich.docx")
+    write_docx(wb, default_layout(wb), out, images_dir=str(tmp_path / "images"))
+    doc = Document(out)
+    # The interior B4:C4 merge (the "Note" row) still renders as one merged cell.
+    note_row = next(r for r in doc.tables[0].rows if r.cells[0].text == "Note")
+    assert note_row.cells[1]._tc is note_row.cells[2]._tc
 
 def test_normal_style_binds_eastasia_font(build_simple_xlsx, tmp_path):
     from docx.oxml.ns import qn

@@ -27,3 +27,25 @@ def test_date():
 
 def test_fallback():
     assert format_cell_value(3.14159, "weird") == "3.14159"
+
+def test_scientific_notation():
+    # was silently collapsing to 0.00 (data loss)
+    assert format_cell_value(1.85e-6, "0.00E+00") == "1.85E-06"
+
+def test_quoted_unit_literals():
+    assert format_cell_value(128, '0" °C"') == "128 °C"
+    assert format_cell_value(2.52, '0.00" g/cm³"') == "2.52 g/cm³"
+    assert format_cell_value(5000, '#,##0" MΩ"') == "5,000 MΩ"
+
+def test_currency_and_accounting():
+    assert format_cell_value(12.47, '"$"#,##0.00') == "$12.47"
+    assert format_cell_value(-12.40, '#,##0.00;(#,##0.00)') == "(12.40)"
+
+def test_datetime_with_time():
+    assert format_cell_value(dt.datetime(2026, 6, 10, 14, 30), "yyyy-mm-dd hh:mm") == "2026-06-10 14:30"
+
+def test_time_of_day():
+    assert format_cell_value(dt.time(12, 0), "h:mm") == "12:00"
+
+def test_error_string_passthrough():
+    assert format_cell_value("#REF!", "General") == "#REF!"

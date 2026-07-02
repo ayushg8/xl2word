@@ -37,7 +37,7 @@ def build_rich_xlsx(tmp_path):
         ws["A1"].fill = PatternFill("solid", fgColor="FFD966")
         ws["A2"] = "Capacity"; ws["B2"] = "280Ah"; ws["C2"] = "314Ah"
         ws["A3"] = "Margin"; ws["B3"] = 0.012; ws["B3"].number_format = "0.0%"
-        ws["A4"] = "Note"; ws["C4"] = None  # intentional blank
+        ws["A4"] = "Note"; ws.merge_cells("B4:C4"); ws["B4"] = "paired"  # interior 2-col merge
         if with_image:
             img_path = tmp_path / "_e.png"
             Image.new("RGB", (40, 20), (10, 80, 160)).save(img_path)

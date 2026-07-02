@@ -167,12 +167,19 @@ def segment_regions(sheet: Sheet) -> list[tuple]:
 
 
 def _region_orientation(sheet: Sheet, region) -> str:
+    """Portrait unless the table genuinely cannot fit portrait width. Judge by the
+    minimum width each column needs (its longest word), not the roomy natural width,
+    so a modest table stays portrait instead of jumping to a half-empty landscape
+    page; only tables whose columns cannot be squeezed into portrait go landscape."""
     r0, c0, r1, c1 = region
     by = {(c.row, c.col): c for c in sheet.cells}
     rows = [[(by.get((r, c)).display if by.get((r, c)) else "") for c in range(c0, c1 + 1)]
             for r in range(r0, r1 + 1)]
-    total = sum(fit.balanced_column_widths(rows, _LANDSCAPE_USABLE, 10))
-    return "portrait" if total <= _PORTRAIT_USABLE else "landscape"
+    if fit.natural_width_sum(rows, 10) <= _PORTRAIT_USABLE:
+        return "portrait"                                  # fits portrait comfortably
+    if fit.min_width_sum(rows, 10) <= _PORTRAIT_USABLE * 72 // 100:
+        return "portrait"                                  # squeezes into portrait with room to spare
+    return "landscape"                                     # genuinely needs the wider page
 
 
 def _is_banner(sheet: Sheet, region) -> bool:
@@ -187,6 +194,60 @@ def _is_banner(sheet: Sheet, region) -> bool:
                and (m.max_col - m.min_col + 1) >= ncols / 2 for m in sheet.merged)
 
 
+def _norm(s: str) -> str:
+    return "".join(ch for ch in s.lower() if ch.isalnum())
+
+
+def _promote_banners(sheet: Sheet, region):
+    """Split a region at its internal section-banner rows (a lone cell merged
+    across most of the block's width, e.g. "Pre-set Conditions" sitting above its
+    own little table). Returns an ordered list of ("heading", text) and
+    ("table", subregion) items so those banners become real headings that read as
+    sections and show up in the contents, instead of merged rows buried in a table."""
+    r0, c0, r1, c1 = region
+    ncols = c1 - c0 + 1
+    cells = {(c.row, c.col): c for c in sheet.cells if (c.display or "").strip()}
+    disp = {k: v.display.strip() for k, v in cells.items()}
+    banners = {}
+    for r in range(r0, r1 + 1):
+        filled = [c for c in range(c0, c1 + 1) if (r, c) in cells]
+        if len(filled) != 1:
+            continue
+        cell = cells[(r, filled[0])]
+        # A section title is bold; a long merged note is not a heading. Allow a
+        # long title only on the region's first row (a document/section title,
+        # e.g. "IBC Cell Spec Matrix — ..."), never a long mid-table note.
+        if not cell.style.bold or (len(disp[(r, filled[0])]) > 60 and r != r0):
+            continue
+        width = max((m.max_col - m.min_col + 1 for m in sheet.merged
+                     if m.min_row <= r <= m.max_row and m.min_col <= filled[0] <= m.max_col),
+                    default=1)
+        if width >= max(2, ncols * 0.8):
+            banners[r] = disp[(r, filled[0])]
+    if not banners:
+        return [("table", region)]
+
+    items, start = [], None
+    for r in range(r0, r1 + 1):
+        if r in banners:
+            if start is not None:
+                items.append(("table", (start, c0, r - 1, c1))); start = None
+            items.append(("heading", banners[r]))
+        elif start is None:
+            start = r
+    if start is not None:
+        items.append(("table", (start, c0, r1, c1)))
+
+    out = []
+    for kind, val in items:
+        if kind == "heading":
+            out.append((kind, val))
+        elif any(disp.get((r, c)) for r in range(val[0], val[2] + 1)
+                 for c in range(val[1], val[3] + 1)):
+            out.append((kind, val))
+    return out
+
+
 def default_layout(wb: Workbook) -> LayoutPlan:
     import os
     blocks: list[Block] = []
@@ -194,14 +255,29 @@ def default_layout(wb: Workbook) -> LayoutPlan:
         if i > 0:
             blocks.append(Block(kind="pagebreak"))
         blocks.append(Block(kind="heading", text=sheet.name, level=1))
+        sheet_key = _norm(sheet.name)
+
+        def add_section_heading(text):
+            # Skip a banner that just restates the sheet name (e.g. sheet
+            # "Material Spec" with banner "MATERIAL SPEC - IQC"). Match on prefix so
+            # a distinct title that merely contains the sheet name is kept.
+            key = _norm(text)
+            if sheet_key and (key.startswith(sheet_key) or sheet_key.startswith(key)):
+                return
+            blocks.append(Block(kind="heading", text=text, level=2))
+
         for region in segment_regions(sheet):
             if _is_banner(sheet, region):
                 cell = next(c for c in sheet.cells
                             if c.row == region[0] and (c.display or "").strip())
-                blocks.append(Block(kind="heading", text=cell.display, level=2))
-            else:
-                blocks.append(Block(kind="table", sheet=sheet.name, region=region,
-                                    orientation=_region_orientation(sheet, region)))
+                add_section_heading(cell.display)
+                continue
+            for kind, val in _promote_banners(sheet, region):
+                if kind == "heading":
+                    add_section_heading(val)
+                else:
+                    blocks.append(Block(kind="table", sheet=sheet.name, region=val,
+                                        orientation=_region_orientation(sheet, val)))
         for img in sheet.images:
             blocks.append(Block(kind="image", path=img.path,
                                 caption=os.path.basename(img.path)))
@@ -210,5 +286,24 @@ def default_layout(wb: Workbook) -> LayoutPlan:
         for img in wb.media:
             blocks.append(Block(kind="image", path=img.path,
                                 caption=os.path.basename(img.path)))
-    title = os.path.splitext(os.path.basename(wb.source))[0]
-    return LayoutPlan(title=title, blocks=blocks)
+    return LayoutPlan(title=_doc_title(wb, blocks), blocks=blocks)
+
+
+_GENERIC_NAMES = {"input", "output", "book1", "book", "sheet1", "workbook", "untitled", "temp", "tmp"}
+
+
+def _doc_title(wb: Workbook, blocks: list[Block]) -> str:
+    """Prefer the workbook filename as the cover title. If it is a generic export
+    name like 'input.xlsx', fall back to the first sheet's own title banner (the
+    document's real title, e.g. 'ASSEMBLY LINE OCAP ...') — only from the first
+    sheet, so we don't grab an unrelated section title deeper in the doc."""
+    import os
+    name = os.path.splitext(os.path.basename(wb.source))[0].strip()
+    if name and name.lower() not in _GENERIC_NAMES:
+        return name
+    # Generic export name: use the first sheet that has content (its name is a
+    # reliable title; a section banner deeper in the doc is not).
+    for s in wb.sheets:
+        if s.cells:
+            return s.name
+    return name or "Document"
