@@ -259,6 +259,11 @@ def _norm(s: str) -> str:
     return "".join(ch for ch in s.lower() if ch.isalnum())
 
 
+# Sheet-name substrings (normalised: lowercase, alnum only) whose sheets are
+# internal working tabs, not customer-facing process spec, so they are excluded.
+_EXCLUDE_SHEETS = ("wip", "actionitems")
+
+
 def _has_body(sheet: Sheet, region) -> bool:
     """Skip a region that is just a wide column-label strip with an empty body (an
     unfilled template table -- prints as a near-blank grid). Keep everything with
@@ -329,9 +334,11 @@ def _promote_banners(sheet: Sheet, region):
 def default_layout(wb: Workbook) -> LayoutPlan:
     import os
     blocks: list[Block] = []
-    # Skip empty sheets and incomplete "(WIP)" sheets -- this is a customer-facing
-    # documentation artifact, not a dump of every in-progress tab.
-    content_sheets = [s for s in wb.sheets if s.cells and "wip" not in _norm(s.name)]
+    # Skip empty sheets and internal / in-progress tabs -- this is a customer-facing
+    # documentation artifact, not a dump of every working tab. Extend _EXCLUDE_SHEETS
+    # to drop other internal-tracker sheets by name.
+    content_sheets = [s for s in wb.sheets
+                      if s.cells and not any(x in _norm(s.name) for x in _EXCLUDE_SHEETS)]
     for i, sheet in enumerate(content_sheets):
         # Sheets flow continuously rather than each forced onto a fresh page: a
         # forced break strands a section's short table tail on a near-empty page.
