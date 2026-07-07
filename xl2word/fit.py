@@ -37,6 +37,29 @@ def _text_width_emu(chars: float, font_size_pt: float) -> int:
     return int((chars * 0.55 + 1.6) * em_emu)
 
 
+def estimate_table_height_emu(rows: list[list[str]], widths_emu: list[int],
+                              font_size_pt: float) -> int:
+    """Approximate rendered table height: for each row, the tallest cell (its text
+    wrapped to that column's width), times line height, plus per-row padding. Used
+    to shrink a table's font so the whole table fits on one page."""
+    em = font_size_pt * EMU_PER_INCH / 72.0
+    char_w = em * 0.55
+    line_h = int(em * 1.28)
+    row_pad = int(EMU_PER_INCH * 5 / 100)     # ~0.05in top+bottom cell margins
+    usable_frac = 0.80                         # width minus cell side padding
+    total = 0
+    for row in rows:
+        max_lines = 1
+        for val, w in zip(row, widths_emu):
+            per_line = max(1, int(w * usable_frac / char_w)) if char_w else 1
+            lines = 0
+            for seg in str(val).split("\n"):
+                lines += max(1, -(-len(seg) // per_line))   # ceil division
+            max_lines = max(max_lines, lines)
+        total += max_lines * line_h + row_pad
+    return total
+
+
 def _col_extents(rows: list[list[str]], font_size_pt: float):
     """Per-column (natural line width, minimum longest-word width)."""
     ncols = max((len(r) for r in rows), default=0)

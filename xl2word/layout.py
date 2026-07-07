@@ -5,8 +5,8 @@ from .model import Workbook, Sheet
 from . import fit
 
 _EMU = 914400
-_PORTRAIT_USABLE = _EMU * 65 // 10   # 6.5in on letter with 1in margins
-_LANDSCAPE_USABLE = _EMU * 9         # 9.0in on letter landscape
+_PORTRAIT_USABLE = _EMU * 73 // 10   # 7.3in on letter with 0.6in margins
+_LANDSCAPE_USABLE = _EMU * 98 // 10  # 9.8in on letter landscape
 
 
 @dataclass
@@ -232,19 +232,15 @@ def segment_regions(sheet: Sheet) -> list[tuple]:
 
 
 def _region_orientation(sheet: Sheet, region) -> str:
-    """Portrait unless the table genuinely cannot fit portrait width. Judge by the
-    minimum width each column needs (its longest word), not the roomy natural width,
-    so a modest table stays portrait instead of jumping to a half-empty landscape
-    page; only tables whose columns cannot be squeezed into portrait go landscape."""
+    """Strongly prefer portrait to avoid orientation churn (every switch forces a
+    section break and a near-empty page). The renderer shrinks the font to fit, so a
+    table only goes landscape when its columns cannot fit portrait width even at the
+    smallest readable font."""
     r0, c0, r1, c1 = region
     by = {(c.row, c.col): c for c in sheet.cells}
     rows = [[(by.get((r, c)).display if by.get((r, c)) else "") for c in range(c0, c1 + 1)]
             for r in range(r0, r1 + 1)]
-    if fit.natural_width_sum(rows, 10) <= _PORTRAIT_USABLE:
-        return "portrait"                                  # fits portrait comfortably
-    if fit.min_width_sum(rows, 10) <= _PORTRAIT_USABLE * 72 // 100:
-        return "portrait"                                  # squeezes into portrait with room to spare
-    return "landscape"                                     # genuinely needs the wider page
+    return "portrait" if fit.min_width_sum(rows, 7) <= _PORTRAIT_USABLE else "landscape"
 
 
 def _is_banner(sheet: Sheet, region) -> bool:
@@ -333,7 +329,9 @@ def _promote_banners(sheet: Sheet, region):
 def default_layout(wb: Workbook) -> LayoutPlan:
     import os
     blocks: list[Block] = []
-    content_sheets = [s for s in wb.sheets if s.cells]   # skip empty sheets entirely
+    # Skip empty sheets and incomplete "(WIP)" sheets -- this is a customer-facing
+    # documentation artifact, not a dump of every in-progress tab.
+    content_sheets = [s for s in wb.sheets if s.cells and "wip" not in _norm(s.name)]
     for i, sheet in enumerate(content_sheets):
         # Sheets flow continuously rather than each forced onto a fresh page: a
         # forced break strands a section's short table tail on a near-empty page.

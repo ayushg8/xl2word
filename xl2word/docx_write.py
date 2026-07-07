@@ -33,17 +33,27 @@ def _style_font(style, *, name=_DEFAULT_FONT, size=None, bold=None, color=None):
     rpr.get_or_add_rFonts().set(qn("w:eastAsia"), name)
 
 
+_MARGIN = Inches(0.6)   # tight margins: this is dense documentation, not a report
+
+
+def _tighten_margins(section) -> None:
+    section.top_margin = section.bottom_margin = _MARGIN
+    section.left_margin = section.right_margin = _MARGIN
+
+
 def _new_document() -> Document:
     doc = Document()
-    _style_font(doc.styles["Normal"], size=10, color=_INK)
-    doc.styles["Normal"].paragraph_format.space_after = Pt(4)
-    for name, size, color in (("Title", 26, _H1), ("Heading 1", 16, _H1),
-                              ("Heading 2", 12.5, _H2)):
+    _tighten_margins(doc.sections[0])
+    _style_font(doc.styles["Normal"], size=9, color=_INK)
+    doc.styles["Normal"].paragraph_format.space_after = Pt(2)
+    # Compact heading scale -- section labels, not report chapter titles.
+    for name, size, color, sb, sa in (("Heading 1", 12, _H1, 8, 3),
+                                      ("Heading 2", 9.5, _H2, 5, 2)):
         if name in doc.styles:
             _style_font(doc.styles[name], size=size, bold=True, color=color)
             pf = doc.styles[name].paragraph_format
-            pf.space_before = Pt(14 if name != "Title" else 0)
-            pf.space_after = Pt(6)
+            pf.space_before = Pt(sb)
+            pf.space_after = Pt(sa)
             pf.keep_with_next = True
     return doc
 
@@ -61,6 +71,7 @@ def _section_for(doc, orientation: str):
     if section.orientation != target:
         section.orientation = target
         section.page_width, section.page_height = section.page_height, section.page_width
+    _tighten_margins(section)
     return section
 
 
@@ -129,7 +140,7 @@ def _light_borders(table) -> None:
     _tblpr_set(table, borders)
 
 
-def _cell_padding(table, top=40, bottom=40, left=90, right=90) -> None:
+def _cell_padding(table, top=14, bottom=14, left=55, right=55) -> None:
     mar = OxmlElement("w:tblCellMar")
     for side, val in (("top", top), ("bottom", bottom), ("left", left), ("right", right)):
         el = OxmlElement(f"w:{side}")
@@ -174,12 +185,17 @@ def _hyperlink(paragraph, anchor, text, color) -> None:
     paragraph._p.append(link)
 
 
-def _toc_entry(doc, level, text, anchor) -> None:
-    p = doc.add_paragraph()
-    pf = p.paragraph_format
-    pf.left_indent = Inches(0.28 * (level - 1))
-    pf.space_after = Pt(3 if level == 1 else 1)
-    _hyperlink(p, anchor, text, _H1 if level == 1 else _H2)
+def _hyperlink_run(paragraph, anchor, text, color, size_pt) -> None:
+    """Append an inline hyperlink run to an existing paragraph (for the compact
+    one-line contents strip)."""
+    link = OxmlElement("w:hyperlink"); link.set(qn("w:anchor"), anchor)
+    r = OxmlElement("w:r"); rpr = OxmlElement("w:rPr")
+    col = OxmlElement("w:color"); col.set(qn("w:val"), color); rpr.append(col)
+    sz = OxmlElement("w:sz"); sz.set(qn("w:val"), str(int(size_pt * 2))); rpr.append(sz)
+    r.append(rpr)
+    t = OxmlElement("w:t"); t.set(qn("xml:space"), "preserve"); t.text = text
+    r.append(t); link.append(r)
+    paragraph._p.append(link)
 
 
 def _page_number_footer(section) -> None:
@@ -241,6 +257,13 @@ def _cant_split(row) -> None:
     trPr.append(el)
 
 
+def _keep_next(row) -> None:
+    """Keep this row with the following one, so the whole table stays on one page."""
+    for cell in row.cells:
+        for para in cell.paragraphs:
+            para.paragraph_format.keep_with_next = True
+
+
 def _apply_cell(docx_cell, model_cell: Cell | None, font_pt: float = 10) -> None:
     para = docx_cell.paragraphs[0]
     text = model_cell.display if model_cell else ""
@@ -280,8 +303,12 @@ def _pruned_axes(sheet: Sheet, rows, r0, c0, r1, c1):
     return keep_rows or [r0], keep_cols or [c0], merges
 
 
-_PORTRAIT_USABLE = 914400 * 65 // 10   # 6.5in
-_LANDSCAPE_USABLE = 914400 * 9          # 9.0in
+_EMU_IN = 914400
+_PORTRAIT_USABLE = _EMU_IN * 73 // 10    # 8.5in page - 2*0.6 margin = 7.3in
+_LANDSCAPE_USABLE = _EMU_IN * 98 // 10   # 11in page - 2*0.6 margin = 9.8in
+_PORTRAIT_HEIGHT = _EMU_IN * 95 // 10    # 11in - 2*0.6 margin - footer ~= 9.5in
+_LANDSCAPE_HEIGHT = _EMU_IN * 71 // 10   # 8.5in - 2*0.6 margin - footer ~= 7.1in
+_MIN_FONT = 6                            # never shrink table text below this
 
 
 def _header_band(keep_rows, merges, nrows) -> int:
@@ -325,6 +352,26 @@ def _label_col_count(rows) -> int:
     return max(1, n)
 
 
+_BASE_FONT = 8   # compact base size for table text
+
+
+def _fit_font(text_rows, usable_w, usable_h) -> tuple:
+    """Pick the largest font (<= base, >= min) at which the table fits the page in
+    both width and height, and return (font_pt, column widths)."""
+    font_pt = _BASE_FONT
+    min_sum = fit.min_width_sum(text_rows, font_pt)
+    if min_sum > usable_w:                       # too wide even at base: shrink for width
+        font_pt = max(_MIN_FONT, _BASE_FONT * usable_w // min_sum)
+    widths = fit.balanced_column_widths(text_rows, usable_w, font_pt)
+    for _ in range(6):                           # shrink for height until it fits one page
+        h = fit.estimate_table_height_emu(text_rows, widths, font_pt)
+        if h <= usable_h or font_pt <= _MIN_FONT:
+            break
+        font_pt = max(_MIN_FONT, int(font_pt * usable_h / h))
+        widths = fit.balanced_column_widths(text_rows, usable_w, font_pt)
+    return font_pt, widths
+
+
 def _render_table(doc, full_rows, r0, c0, keep_rows, keep_cols, merges,
                   orientation, hdr_count, caption=None) -> None:
     section = _section_for(doc, orientation)
@@ -334,17 +381,16 @@ def _render_table(doc, full_rows, r0, c0, keep_rows, keep_cols, merges,
     nrows, ncols = len(rows), len(keep_cols)
     text_rows = [[(cell.display if cell else "") for cell in row] for row in rows]
     usable = _usable_width_emu(section)
-    font_pt = 10
-    min_sum = fit.min_width_sum(text_rows, 10)
-    if min_sum > usable:
-        font_pt = max(7, 10 * usable // min_sum)
-    widths = fit.balanced_column_widths(text_rows, usable, font_pt)
+    usable_h = _LANDSCAPE_HEIGHT if orientation == "landscape" else _PORTRAIT_HEIGHT
+    font_pt, widths = _fit_font(text_rows, usable, usable_h)
 
     if caption:
         cp = doc.add_paragraph()
-        cp.paragraph_format.space_before = Pt(2); cp.paragraph_format.space_after = Pt(2)
-        run = cp.add_run(caption); run.italic = True; run.font.size = Pt(8)
+        cp.paragraph_format.space_before = Pt(1); cp.paragraph_format.space_after = Pt(1)
+        run = cp.add_run(caption); run.italic = True; run.font.size = Pt(7)
         run.font.color.rgb = RGBColor.from_string(_H2)
+
+    fits_one_page = fit.estimate_table_height_emu(text_rows, widths, font_pt) <= usable_h
 
     table = doc.add_table(rows=nrows, cols=ncols)
     _light_borders(table)
@@ -358,8 +404,14 @@ def _render_table(doc, full_rows, r0, c0, keep_rows, keep_cols, merges,
     if grid is not None:
         for gc, w_emu in zip(grid.findall(qn("w:gridCol")), widths):
             gc.set(qn("w:w"), str(int(w_emu / 635)))
-    for row in table.rows:
+    # Rows never split mid-row. If the whole table fits one page, also keep every
+    # row with the next so Word holds the table together on a single page (no
+    # cross-page continuation). If it is genuinely taller than a page even at the
+    # min font, let it flow so it packs cleanly instead of stranding a few rows.
+    for i, row in enumerate(table.rows):
         _cant_split(row)
+        if fits_one_page and i < nrows - 1:
+            _keep_next(row)
     # Apply only merges whose whole span is inside this column set (a chunk may
     # exclude some columns a merge covers; skip those to keep the grid valid).
     for m in merges:
@@ -370,7 +422,6 @@ def _render_table(doc, full_rows, r0, c0, keep_rows, keep_cols, merges,
             a.merge(b)
             _strip_extra_paragraphs(a)
     for gi in range(min(hdr_count, nrows)):
-        _repeat_header(table.rows[gi])
         if nrows >= 2:
             _style_header_row(table.rows[gi])
 
@@ -385,8 +436,8 @@ def _add_table(doc, sheet: Sheet, block: Block) -> None:
     hdr = _header_band(keep_rows, merges, len(keep_rows))
     usable = _LANDSCAPE_USABLE if block.orientation == "landscape" else _PORTRAIT_USABLE
 
-    # If the table fits (even after the 7pt font shrink), render it as one table.
-    if fit.min_width_sum(text_rows, 7) <= usable:
+    # If the table fits horizontally (even at the min font), render it as one table.
+    if fit.min_width_sum(text_rows, _MIN_FONT) <= usable:
         _render_table(doc, full_rows, r0, c0, keep_rows, keep_cols, merges, block.orientation, hdr)
         return
 
@@ -399,7 +450,7 @@ def _add_table(doc, sheet: Sheet, block: Block) -> None:
     def width_of(cols):
         sub = [[(full_rows[orig - r0][cc - c0].display if full_rows[orig - r0][cc - c0] else "")
                 for cc in cols] for orig in keep_rows]
-        return fit.min_width_sum(sub, 7)
+        return fit.min_width_sum(sub, _MIN_FONT)
 
     chunks, cur = [], []
     for dc in data_cols:
@@ -447,21 +498,26 @@ def write_docx(wb: Workbook, layout: LayoutPlan, out_path: str, images_dir: str)
     # Assign a bookmark anchor to every heading so the contents can link to it.
     anchors = {i: f"sec{i}" for i, b in enumerate(layout.blocks) if b.kind == "heading"}
 
-    # Title page.
+    # Compact title block (no cover page): title line, then a tight one-line
+    # contents of the sheets, then straight into content. This is documentation,
+    # not a report -- no ceremony.
     if layout.title:
-        t = doc.add_paragraph(layout.title, style="Title")
-        t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-    # Contents: a hyperlinked entry per heading, linking straight to its section.
-    toc_head = doc.add_paragraph()   # plain styled, so it is not itself an entry
-    toc_head.paragraph_format.page_break_before = True
-    toc_head.paragraph_format.space_after = Pt(6)
-    run = toc_head.add_run("Contents")
-    run.bold = True; run.font.size = Pt(16); run.font.color.rgb = RGBColor.from_string(_H1)
-    for i, block in enumerate(layout.blocks):
-        if block.kind == "heading" and (block.text or "").strip():
-            _toc_entry(doc, block.level or 1, block.text, anchors[i])
-    doc.add_page_break()
+        t = doc.add_paragraph()
+        t.paragraph_format.space_after = Pt(2)
+        run = t.add_run(layout.title)
+        run.bold = True; run.font.size = Pt(15); run.font.color.rgb = RGBColor.from_string(_H1)
+    sheet_headings = [(i, b) for i, b in enumerate(layout.blocks)
+                      if b.kind == "heading" and b.level == 1 and (b.text or "").strip()]
+    if len(sheet_headings) > 1:
+        toc = doc.add_paragraph()
+        toc.paragraph_format.space_after = Pt(8)
+        lbl = toc.add_run("Contents:  ")
+        lbl.bold = True; lbl.font.size = Pt(8); lbl.font.color.rgb = RGBColor.from_string(_H2)
+        for n, (i, b) in enumerate(sheet_headings):
+            if n:
+                sep = toc.add_run("   ·   "); sep.font.size = Pt(8)
+                sep.font.color.rgb = RGBColor.from_string(_BORDER)
+            _hyperlink_run(toc, anchors[i], b.text, _H2, 8)
 
     prev_kind = None
     for idx, block in enumerate(layout.blocks):
