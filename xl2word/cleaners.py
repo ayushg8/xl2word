@@ -5,6 +5,10 @@ import re
 _QUOTED = re.compile(r'"([^"]*)"')
 _PLACEHOLDER = re.compile(r"[0#]")
 _URL = re.compile(r"^https?://([^/\s]+)(/\S*)?$", re.IGNORECASE)
+# Excel formula-error literals: blanked so broken source formulas don't show to a
+# reader. They mark a formula problem in the sheet, not real data.
+_EXCEL_ERRORS = {"#REF!", "#DIV/0!", "#VALUE!", "#N/A", "#NAME?", "#NUM!",
+                 "#NULL!", "#SPILL!", "#CALC!", "#GETTING_DATA"}
 
 
 def _shorten_url(s: str) -> str:
@@ -31,6 +35,8 @@ def format_cell_value(value, number_format: str | None) -> str:
     if value is None:
         return ""
     if isinstance(value, str):
+        if value.strip() in _EXCEL_ERRORS:
+            return ""
         return _shorten_url(value)
     if isinstance(value, dt.datetime):
         return _format_datetime(value, number_format or "")

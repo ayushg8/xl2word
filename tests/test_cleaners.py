@@ -47,5 +47,6 @@ def test_datetime_with_time():
 def test_time_of_day():
     assert format_cell_value(dt.time(12, 0), "h:mm") == "12:00"
 
-def test_error_string_passthrough():
-    assert format_cell_value("#REF!", "General") == "#REF!"
+def test_error_strings_hidden():
+    for e in ("#REF!", "#DIV/0!", "#VALUE!", "#N/A"):
+        assert format_cell_value(e, "General") == ""
