@@ -4,6 +4,21 @@ import re
 
 _QUOTED = re.compile(r'"([^"]*)"')
 _PLACEHOLDER = re.compile(r"[0#]")
+_URL = re.compile(r"^https?://([^/\s]+)(/\S*)?$", re.IGNORECASE)
+
+
+def _shorten_url(s: str) -> str:
+    """Collapse a long bare URL to 'domain/…/tail' so a cell full of pasted Google
+    Docs links reads cleanly instead of dumping 80 characters of raw URL."""
+    t = s.strip()
+    if len(t) <= 50:
+        return s
+    m = _URL.match(t)
+    if not m:
+        return s
+    domain, path = m.group(1), (m.group(2) or "")
+    tail = path.rstrip("/").split("/")[-1].split("?")[0][:18]
+    return f"{domain}/…/{tail}" if tail else domain
 
 
 def format_cell_value(value, number_format: str | None) -> str:
@@ -16,7 +31,7 @@ def format_cell_value(value, number_format: str | None) -> str:
     if value is None:
         return ""
     if isinstance(value, str):
-        return value
+        return _shorten_url(value)
     if isinstance(value, dt.datetime):
         return _format_datetime(value, number_format or "")
     if isinstance(value, dt.time):

@@ -45,6 +45,51 @@ class LayoutPlan:
 
 
 _ANCHOR_MIN_ROWS = 4   # a side-by-side gap must span at least this many rows to cut on
+_DENSE_FRAC = 0.35     # a column counts as populated if this fraction of content rows fill it
+_VGAP_ROWS = 3         # a contiguous empty-row run this tall splits a column group vertically
+
+
+def _is_substantial(gc0, gc1, br0, br1, full) -> bool:
+    """A column group is a real side-by-side table (worth splitting off) only if it
+    has at least two well-populated columns. A group with one dense column padded by
+    near-empty ones is a sparse annotation strip (e.g. an answer/status column) that
+    belongs with its neighbour, not a standalone table -- splitting it off renders a
+    broken, mostly-blank fragment."""
+    content_rows = [r for r in range(br0, br1 + 1)
+                    if any((r, c) in full for c in range(gc0, gc1 + 1))]
+    if not content_rows:
+        return False
+    dense = sum(1 for c in range(gc0, gc1 + 1)
+                if sum(1 for r in content_rows if (r, c) in full) >= len(content_rows) * _DENSE_FRAC)
+    return dense >= 2
+
+
+def _absorb_thin_groups(groups, br0, br1, full):
+    """Attach a thin annotation column-group to the substantial table on its LEFT,
+    so answer/status columns rejoin the questions they belong to (which read left of
+    them). A thin block with no table to its left -- a standalone note list sitting
+    left of an unrelated table -- is kept as its own region rather than being pulled
+    into that table and interleaved. If no group is substantial, the band is one
+    table."""
+    if len(groups) <= 1:
+        return groups
+    subs = [_is_substantial(a, b, br0, br1, full) for (a, b) in groups]
+    if not any(subs):
+        return [(groups[0][0], groups[-1][1])]
+    spans = {}
+    for i, ok in enumerate(subs):
+        if ok:
+            spans[i] = list(groups[i])
+    for i, grp in enumerate(groups):
+        if subs[i]:
+            continue
+        left_anchors = [j for j in spans if groups[j][0] < grp[0]]
+        if left_anchors:
+            j = max(left_anchors, key=lambda k: groups[k][0])   # nearest table on the left
+            spans[j][1] = max(spans[j][1], grp[1])
+        else:
+            spans[i] = list(grp)                                # standalone; keep separate
+    return [tuple(spans[i]) for i in sorted(spans, key=lambda k: spans[k][0])]
 
 
 def segment_regions(sheet: Sheet) -> list[tuple]:
@@ -120,10 +165,30 @@ def segment_regions(sheet: Sheet) -> list[tuple]:
                     g = [g[0], c]
             if g:
                 groups.append(tuple(g))
+            groups = _absorb_thin_groups(groups, br0, br1, full)
             for gc0, gc1 in groups:
-                b = bbox(br0, gc0, br1, gc1)
-                if b:
-                    out.append(b)
+                # Re-split this column group at genuine vertical gaps (a contiguous
+                # run of >=3 empty rows), which a band-level scan misses when other
+                # columns carry content across the gap. Stacked blocks in one column
+                # (a params table above a maintenance-note list) become separate
+                # tables instead of one grid with blank rows and misaligned columns.
+                grp_rows = [r for r in range(br0, br1 + 1)
+                            if any((r, c) in full for c in range(gc0, gc1 + 1))]
+                start = prev = None
+                for r in grp_rows:
+                    if start is None:
+                        start = prev = r
+                    elif r - prev - 1 >= _VGAP_ROWS and not any(row_spanned(x) for x in range(prev + 1, r + 1)):
+                        b = bbox(start, gc0, prev, gc1)
+                        if b:
+                            out.append(b)
+                        start = prev = r
+                    else:
+                        prev = r
+                if start is not None:
+                    b = bbox(start, gc0, prev, gc1)
+                    if b:
+                        out.append(b)
         return out
 
     def anchored_cut(rlo, clo, rhi, chi):
@@ -198,6 +263,23 @@ def _norm(s: str) -> str:
     return "".join(ch for ch in s.lower() if ch.isalnum())
 
 
+def _has_body(sheet: Sheet, region) -> bool:
+    """Skip a region that is just a wide column-label strip with an empty body (an
+    unfilled template table -- prints as a near-blank grid). Keep everything with
+    data in two or more rows, and keep a genuine tiny table (a lone row of one or
+    two cells is real content, not a header)."""
+    r0, c0, r1, c1 = region
+    per_row = {}
+    for c in sheet.cells:
+        if r0 <= c.row <= r1 and c0 <= c.col <= c1 and (c.display or "").strip():
+            per_row[c.row] = per_row.get(c.row, 0) + 1
+    if len(per_row) >= 2:
+        return True
+    if not per_row:
+        return False
+    return next(iter(per_row.values())) < 3   # lone row: keep only if it is not a label strip
+
+
 def _promote_banners(sheet: Sheet, region):
     """Split a region at its internal section-banner rows (a lone cell merged
     across most of the block's width, e.g. "Pre-set Conditions" sitting above its
@@ -251,9 +333,11 @@ def _promote_banners(sheet: Sheet, region):
 def default_layout(wb: Workbook) -> LayoutPlan:
     import os
     blocks: list[Block] = []
-    for i, sheet in enumerate(wb.sheets):
-        if i > 0:
-            blocks.append(Block(kind="pagebreak"))
+    content_sheets = [s for s in wb.sheets if s.cells]   # skip empty sheets entirely
+    for i, sheet in enumerate(content_sheets):
+        # Sheets flow continuously rather than each forced onto a fresh page: a
+        # forced break strands a section's short table tail on a near-empty page.
+        # The bold H1 heading (kept with its content) delineates each sheet.
         blocks.append(Block(kind="heading", text=sheet.name, level=1))
         sheet_key = _norm(sheet.name)
 
@@ -275,7 +359,7 @@ def default_layout(wb: Workbook) -> LayoutPlan:
             for kind, val in _promote_banners(sheet, region):
                 if kind == "heading":
                     add_section_heading(val)
-                else:
+                elif _has_body(sheet, val):
                     blocks.append(Block(kind="table", sheet=sheet.name, region=val,
                                         orientation=_region_orientation(sheet, val)))
         for img in sheet.images:
