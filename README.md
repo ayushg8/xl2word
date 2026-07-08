@@ -2,6 +2,10 @@
 
 Turn an Excel workbook into a clean, publish-ready Word document, with tables that actually look like tables.
 
+![Excel to Word: the same sheet, scraped into a grid vs. understood and composed as documentation](docs/demo.gif)
+
+*The same sheet. Left: the working spreadsheet. Right: after xl2word reads it and composes it as documentation, with settings as a key list, notes as bullets, and only genuinely tabular data as tables.*
+
 Most Excel-to-Word conversions fall apart on the tables. Columns spill off the page, merged cells break, number formatting disappears, and embedded images get dropped, so you spend more time fixing the output by hand than the conversion ever saved. xl2word solves this by splitting the work in two. Deterministic Python captures everything in the workbook so nothing is lost, and Claude designs the layout so the result looks right and fits the page.
 
 The output is a real Word document. The tables are native and editable, not screenshots, so the recipient can select, copy, and change the values.
