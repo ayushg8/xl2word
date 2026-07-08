@@ -11,14 +11,17 @@ _LANDSCAPE_USABLE = _EMU * 98 // 10  # 9.8in on letter landscape
 
 @dataclass
 class Block:
+    # kind: heading | prose | keyvalue | bullets | note | table | image | pagebreak
     kind: str
-    text: str | None = None
-    level: int | None = None
-    sheet: str | None = None
-    region: tuple | None = None
+    text: str | None = None          # heading / prose / note text
+    level: int | None = None         # heading level
+    sheet: str | None = None         # table source sheet
+    region: tuple | None = None      # table source region
     orientation: str = "portrait"
     path: str | None = None
-    caption: str | None = None
+    caption: str | None = None       # short label above a table
+    items: list | None = None        # bullets: list of strings
+    pairs: list | None = None         # keyvalue: list of [key, value]
 
 
 @dataclass
@@ -40,6 +43,7 @@ class LayoutPlan:
                 sheet=b.get("sheet"), region=region,
                 orientation=b.get("orientation", "portrait"),
                 path=b.get("path"), caption=b.get("caption"),
+                items=b.get("items"), pairs=b.get("pairs"),
             ))
         return cls(title=d["title"], blocks=blocks)
 

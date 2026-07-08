@@ -50,3 +50,16 @@ def test_time_of_day():
 def test_error_strings_hidden():
     for e in ("#REF!", "#DIV/0!", "#VALUE!", "#N/A"):
         assert format_cell_value(e, "General") == ""
+
+
+def test_sanitize_strips_em_dash():
+    from xl2word.cleaners import sanitize_authored
+    assert "—" not in sanitize_authored("Pusher pressure — fixed")
+    assert sanitize_authored("Pusher pressure — fixed") == "Pusher pressure - fixed"
+    assert sanitize_authored("range 159–3") == "range 159-3"
+
+def test_find_ai_tells():
+    from xl2word.cleaners import find_ai_tells
+    assert "leverage" in find_ai_tells("we leverage a robust approach")
+    assert "robust" in find_ai_tells("we leverage a robust approach")
+    assert find_ai_tells("plain human sentence with no tells") == []

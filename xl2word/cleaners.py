@@ -10,6 +10,28 @@ _URL = re.compile(r"^https?://([^/\s]+)(/\S*)?$", re.IGNORECASE)
 _EXCEL_ERRORS = {"#REF!", "#DIV/0!", "#VALUE!", "#N/A", "#NAME?", "#NUM!",
                  "#NULL!", "#SPILL!", "#CALC!", "#GETTING_DATA"}
 
+# AI-tell vocabulary that must not appear in model-authored document text.
+AI_TELLS = ("comprehensive", "robust", "leverage", "delve", "navigate", "intricate",
+            "underscore", "crucial", "essential", "seamless", "utilize", "furthermore",
+            "moreover", "facilitate", "in order to")
+
+
+def sanitize_authored(text: str) -> str:
+    """Clean model-authored document text (prose, bullets, notes, captions): replace
+    em/en dashes with a plain hyphen so no em dash reaches the page. Source cell
+    values are NOT run through this -- they are the customer's own data, kept verbatim."""
+    if not text:
+        return text
+    s = re.sub(r"\s*—\s*", " - ", text)   # em dash -> spaced hyphen
+    s = s.replace("–", "-")               # en dash -> hyphen
+    return re.sub(r" {2,}", " ", s).strip()
+
+
+def find_ai_tells(text: str) -> list:
+    """AI-tell words present in a piece of authored text, for flagging in review."""
+    low = (text or "").lower()
+    return [t for t in AI_TELLS if re.search(r"\b" + re.escape(t) + r"\b", low)]
+
 
 def _shorten_url(s: str) -> str:
     """Collapse a long bare URL to 'domain/…/tail' so a cell full of pasted Google

@@ -10,6 +10,7 @@ from docx.oxml import OxmlElement
 from .model import Workbook, Sheet, Cell
 from .layout import LayoutPlan, Block
 from . import fit
+from .cleaners import sanitize_authored
 
 _ALIGN = {"left": WD_ALIGN_PARAGRAPH.LEFT, "center": WD_ALIGN_PARAGRAPH.CENTER,
           "right": WD_ALIGN_PARAGRAPH.RIGHT}
@@ -266,7 +267,9 @@ def _keep_next(row) -> None:
 
 def _apply_cell(docx_cell, model_cell: Cell | None, font_pt: float = 10) -> None:
     para = docx_cell.paragraphs[0]
-    text = model_cell.display if model_cell else ""
+    # Normalise em/en dashes to hyphens even in source cells: a typographic rule for
+    # the whole document (no em dashes), and it never touches numbers or values.
+    text = (model_cell.display or "").replace("—", " - ").replace("–", "-") if model_cell else ""
     run = para.add_run(text)
     run.font.size = Pt(font_pt)
     if model_cell:
@@ -387,7 +390,7 @@ def _render_table(doc, full_rows, r0, c0, keep_rows, keep_cols, merges,
     if caption:
         cp = doc.add_paragraph()
         cp.paragraph_format.space_before = Pt(1); cp.paragraph_format.space_after = Pt(1)
-        run = cp.add_run(caption); run.italic = True; run.font.size = Pt(7)
+        run = cp.add_run(sanitize_authored(caption)); run.italic = True; run.font.size = Pt(7)
         run.font.color.rgb = RGBColor.from_string(_H2)
 
     fits_one_page = fit.estimate_table_height_emu(text_rows, widths, font_pt) <= usable_h
@@ -479,6 +482,65 @@ def _repeat_header(row) -> None:
     trPr.append(th)
 
 
+def _add_prose(doc, text: str) -> None:
+    """A short plain-English intro line under a heading."""
+    p = doc.add_paragraph()
+    p.paragraph_format.space_after = Pt(4)
+    run = p.add_run(sanitize_authored(text))
+    run.font.size = Pt(9)
+    run.font.color.rgb = RGBColor.from_string(_INK)
+
+
+def _add_bullets(doc, items: list) -> None:
+    """A real bulleted list -- for notes/instructions that are a list, not a grid."""
+    for it in items:
+        text = sanitize_authored(it if isinstance(it, str) else str(it))
+        if not text:
+            continue
+        p = doc.add_paragraph(style="List Bullet")
+        pf = p.paragraph_format
+        pf.space_after = Pt(1); pf.space_before = Pt(0)
+        pf.left_indent = Inches(0.25); pf.first_line_indent = Inches(-0.13)
+        run = p.add_run(text)
+        run.font.size = Pt(9); run.font.color.rgb = RGBColor.from_string(_INK)
+
+
+def _add_note(doc, text: str) -> None:
+    """A subtle callout for a single important note (indented, shaded, italic)."""
+    p = doc.add_paragraph()
+    pf = p.paragraph_format
+    pf.left_indent = Inches(0.1); pf.space_before = Pt(2); pf.space_after = Pt(3)
+    shd = OxmlElement("w:shd"); shd.set(qn("w:val"), "clear"); shd.set(qn("w:fill"), "F1F4FA")
+    p._p.get_or_add_pPr().append(shd)
+    run = p.add_run(sanitize_authored(text))
+    run.italic = True; run.font.size = Pt(8.5); run.font.color.rgb = RGBColor.from_string(_H2)
+
+
+def _add_keyvalue(doc, pairs: list) -> None:
+    """A compact settings block: bold key, aligned value -- for a small set of
+    parameter/value settings that read better as a definition list than a grid."""
+    valid = [(str(k).strip(), str(v).strip()) for k, v in pairs if str(k).strip()]
+    if not valid:
+        return
+    key_w = min(_EMU_IN * 32 // 10, max((fit._text_width_emu(len(k), 9) for k, _ in valid), default=0))
+    table = doc.add_table(rows=len(valid), cols=2)
+    _cell_padding(table, top=6, bottom=6, left=0, right=60)
+    _fixed_layout(table, int((key_w + _EMU_IN * 24 // 10) / 635))
+    for i, (k, v) in enumerate(valid):
+        kc, vc = table.cell(i, 0), table.cell(i, 1)
+        _set_cell_width(kc, key_w); _set_cell_width(vc, _EMU_IN * 24 // 10)
+        kr = kc.paragraphs[0].add_run(sanitize_authored(k))
+        kr.bold = True; kr.font.size = Pt(9); kr.font.color.rgb = RGBColor.from_string(_INK)
+        vr = vc.paragraphs[0].add_run(v)
+        vr.font.size = Pt(9); vr.font.color.rgb = RGBColor.from_string(_INK)
+        for c in (kc, vc):
+            c.paragraphs[0].paragraph_format.space_after = Pt(0)
+    for i, row in enumerate(table.rows):
+        _cant_split(row)
+        if i < len(table.rows) - 1:
+            _keep_next(row)
+
+
 def _add_image(doc, images_dir: str, block: Block) -> None:
     from docx.shared import Inches
     path = block.path
@@ -531,7 +593,7 @@ def write_docx(wb: Workbook, layout: LayoutPlan, out_path: str, images_dir: str)
                     break
                 if later.kind == "pagebreak":
                     break
-            h = doc.add_heading(block.text or "", level=block.level or 1)
+            h = doc.add_heading(sanitize_authored(block.text or ""), level=block.level or 1)
             _bookmark(h, anchors[idx], idx)
         elif block.kind == "table" and block.sheet in by_name:
             # Word merges two tables that are not separated by a paragraph, which
@@ -542,6 +604,14 @@ def write_docx(wb: Workbook, layout: LayoutPlan, out_path: str, images_dir: str)
                 sp.paragraph_format.space_before = Pt(0)
                 sp.paragraph_format.space_after = Pt(4)
             _add_table(doc, by_name[block.sheet], block)
+        elif block.kind == "prose" and block.text:
+            _add_prose(doc, block.text)
+        elif block.kind == "bullets" and block.items:
+            _add_bullets(doc, block.items)
+        elif block.kind == "note" and block.text:
+            _add_note(doc, block.text)
+        elif block.kind == "keyvalue" and block.pairs:
+            _add_keyvalue(doc, block.pairs)
         elif block.kind == "image" and block.path:
             _add_image(doc, images_dir, block)
         elif block.kind == "pagebreak":
