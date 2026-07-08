@@ -1,46 +1,75 @@
 ---
 name: xl2word
-description: Use when converting an Excel/Google-Sheets .xlsx into a clean, publish-ready Word (.docx), especially IBC recipe/spec sheets headed to customers. Produces editable, neatly-fitted tables, carries images, and verifies the result against a written layout contract.
+description: Use when converting an Excel/Google-Sheets .xlsx into clean, customer-facing Word (.docx) process documentation. Claude reads and understands each sheet, then composes it like a person writing a spec document (settings as key/value lists, note-lists as bullets, tabular data as fitted tables) rather than scraping every block into a grid. Editable tables, one table per page, compact.
 ---
 
 # xl2word: Excel to Word
 
-Convert any `.xlsx` into a clean, editable, neatly-laid-out `.docx`. Code captures the data; you (Claude) design the layout and verify the render.
+Turn a spreadsheet into a **customer-facing process-spec document**. The Excel stays the team's working/editing tool; the Word doc is what they show a customer to document their process. So the goal is not a faithful dump of the sheet, it is a **document a person would be proud to hand over**: dense, organized, and readable.
 
-## Preflight (do this first, every time)
+The division of labor is the whole point:
+- **Python captures** every value/style/merge (reliable, deterministic).
+- **You (Claude) understand** each sheet and decide how to present it (taste, structure).
+- **Python renders** your plan into the .docx (deterministic).
 
-1. **Model check.** This skill is built for maximum quality. Confirm you are running on **Opus 4.8 with the 1M context window at high effort**. If you are not, STOP and tell the user to relaunch, for example:
-   `claude --model claude-opus-4-8[1m]` (and set high effort), ideally with `--dangerously-skip-permissions` so the multi-step pipeline runs without repeated prompts. The skip-permissions flag is a recommendation; the model is not.
-2. **Tooling check.** Ensure `soffice` (LibreOffice) is on PATH and the package is installed (`pip install -e .` inside `xl2word/`). If `soffice` is missing, tell the user how to install it.
+Do not try to make Python guess structure. You read the sheet and compose it.
 
-## The five stages
+## Preflight (every time)
 
-### 1. Extract (run the Python, do not eyeball the sheet)
-Run: `python -m xl2word.cli "<input.xlsx>" -o "<out.docx>" --workdir "<work>"` to do a first deterministic pass, OR call extraction directly to inspect first:
+1. **Model check.** Built for maximum quality; confirm you are on **Opus 4.8, 1M context, high effort**. If not, stop and tell the user to relaunch (`claude --model claude-opus-4-8[1m]`, high effort, ideally `--dangerously-skip-permissions`).
+2. **Tooling.** `soffice` (LibreOffice) on PATH and the package installed (`pip install -e .` inside the repo). If `soffice` is missing, tell the user how to install it.
+
+## 1. Extract (Python captures the data)
+
 `python -c "from xl2word.extract import extract_workbook; extract_workbook('<input.xlsx>', '<work>')"`
-This writes `<work>/workbook.json`, `<work>/images/`, and `<work>/screenshots/`.
+writes `<work>/workbook.json` (every cell value, style, merge) plus `images/` and `screenshots/`.
 
-### 2. Understand
-Read `<work>/workbook.json` AND open every image in `<work>/screenshots/`. Cross-reference them. Identify, per sheet: the real tables and their regions, group-header rows, titles/banners/footers, what each embedded image is, and any region the structured data did not capture cleanly (a chart, a dense graphic). Use the screenshot to resolve anything the cells alone are ambiguous about. If something is missing from the JSON but visible in the screenshot, write a small targeted extraction for just that piece.
+## 2. Understand + compose each sheet (this is the job)
 
-### 3. Plan: write `layout.md` and `layout.json`
-Write `<work>/layout.md` as the human-readable design contract, page by page, for example:
-> Page 1: the Cell Specification comparison table (landscape, fitted within the page). Below it, the electrode-geometry image with caption.
-> Page 2: the Mixing table (portrait).
+For **each sheet**, read its cells (values, which are bold, which are filled, the merged ranges) and work out what each region actually *is*, then emit an ordered list of blocks describing how to present it. On a large workbook, understand sheets in parallel (one subagent per sheet), then merge the block lists.
 
-Then write `<work>/layout.json` matching `LayoutPlan` (blocks: heading/table/image/pagebreak, with `sheet`, `region`, `orientation`, `path`, `caption`). For any region too visual to rebuild as an editable table, set the block to an `image` pointing at that region's screenshot. Never drop content.
+Compose with this vocabulary. Pick the block that matches what the content *is*:
 
-**Layout rule: one table, one page.** Aim to fit each table on a single page. Try whatever it takes to get there and still look clean: adjust column widths (wider or narrower), step the font down, switch the section to `landscape`, or split into logical sub-tables by region. If a table truly cannot be made neat within one page, letting it spill to a second page is acceptable, but one page is the default goal. It must always look clean and deliberate, never cramped or crappy.
+- **heading** (`level` 2): a section title. Turn bold section banners ("Pre-set Conditions", "Slitting Results") into level-2 headings. Do **not** emit the sheet's own name or its big ALL-CAPS title banner; the level-1 sheet heading is added for you.
+- **prose** (`text`): one short plain-English sentence introducing a sheet or section. Use sparingly, only where it adds clarity.
+- **keyvalue** (`pairs: [[key, value], ...]`): a small set of single settings/parameters (roughly a 2-column, ≤ ~12-row parameter→value block). Reads as a clean settings list instead of a grid. This is the right choice for most "Pre-set Conditions" / process-condition blocks.
+- **bullets** (`items: [...]`): a list of notes, instructions, or maintenance steps that are really prose, not a table. **This is the biggest readability win.** Merge a sentence split across several rows into one bullet and lightly tidy connective wording.
+- **note** (`text`): one short shaded callout (a batch-totals summary line, a single important warning).
+- **table** (`region: [r0, c0, r1, c1]`): genuinely tabular data with multiple value columns (a step recipe, a material list, a metrics table with target/range, a results grid). Reference the source rectangle including its header row(s); the renderer pulls the exact cells, so numbers cannot be altered. Set `orientation: "landscape"` only for a genuinely wide table, else `"portrait"`.
 
-**Writing rules for any text you add (titles, captions):** plain and human. No em dashes. None of: comprehensive, robust, leverage, delve, navigate, intricate, underscore, crucial, essential. The document carries the sheet's data. Do not editorialize it.
+**Worked example — a mixing sheet:** room conditions → `keyvalue`; the ingredient list (Category/Product/mass/%) → `table`; a "batch totals" line → `note`; the Measurement/Target/Range block → `table`; the six "Additional notes" sentences → `bullets` (one per note, split-row sentences merged); the 14-step Equipment/Step/Process/RPM/Time recipe → `table`; Cleaning and Maintenance sentences → `bullets`.
 
-### 4. Execute
-Render against your plan:
-`python -m xl2word.cli "<input.xlsx>" -o "<out.docx>" --workdir "<work>" --layout "<work>/layout.json"`
+### Hard rules
 
-### 5. Verify against the contract (loop until clean)
-Run `python -c "from xl2word.verify import render_doc, detect_overflow; print(detect_overflow('<out.docx>')); print(render_doc('<out.docx>', '<work>/verify'))"`.
-First, fix anything `detect_overflow` reports. Then open every PNG in `<work>/verify/` and walk the whole document against `layout.md`: is each promised table present, does it fit the page width with no clipped columns, **does each table sit on a single page**, are merges intact, are images placed and uncut, and does every table look clean rather than cramped? For each table that spills onto a second page, try the one-page techniques in order (adjust column widths, step the font down, switch to landscape, or split by region), re-render, and re-check. For any other mismatch, adjust `layout.json` (orientation, region split, font, captions) and re-run stages 4-5. Repeat until the render matches `layout.md` and tables are one-page-and-neat wherever achievable. Do not stop at the first render.
+- **Never alter data.** Every number, unit, tolerance (±), spec, and material/supplier name stays exact. For anything dense or numeric, use a `table` region (zero transcription risk). Only transcribe into `keyvalue`/`bullets`/`note`/`prose`, and there you may merge split cells and tidy grammar but never invent, drop, round, or change a value. Do not add facts that are not in the sheet.
+- **Writing style for any text you author** (prose, bullets, notes, captions, headings): plain and human. No em dashes. None of: comprehensive, robust, leverage, delve, navigate, intricate, underscore, crucial, essential. (The renderer also strips em dashes and you can check with `xl2word.cleaners.find_ai_tells`, but write it right in the first place.)
+- **Leave out what is not customer-facing.** Skip empty sheets, `(WIP)` / in-progress tabs, and internal trackers (action-item logs, Q&A). Keep the document to the process spec.
+- **Compact, no ceremony.** No cover page and no multi-page table of contents. Every table fits on one page (the renderer shrinks the font to fit width and height and keeps each table whole). Aim for a short document.
+
+## 3. Render
+
+Write `<work>/layout.json` as a single `LayoutPlan`: `{"title": "...", "blocks": [...]}`. For each kept sheet, emit `{"kind":"heading","text":"<Sheet Name>","level":1}` then that sheet's composed blocks. **Every `table` block must carry `"sheet": "<Sheet Name>"`** as well as its `region`, or the renderer skips it. Example blocks:
+
+```json
+{"kind":"heading","text":"Anode Mix","level":1}
+{"kind":"prose","text":"Anode slurry is mixed in a 100 L single-vessel planetary mixer."}
+{"kind":"heading","text":"Pre-set Conditions","level":2}
+{"kind":"keyvalue","pairs":[["Room Dew Point (°C)","< -20"],["Room Temperature (°C)","23"]]}
+{"kind":"heading","text":"Raw Materials","level":2}
+{"kind":"table","sheet":"Anode Mix","region":[6,7,12,14],"orientation":"portrait"}
+{"kind":"note","text":"Batch totals: 50.0% solid content, 83.30 kg total mass, 59.5 L total volume."}
+{"kind":"bullets","items":["Viscosity is the primary metric to achieve within target value.","Keep the chiller connected to the main tank and running."]}
+```
+
+Then render:
+
+`python -c "from xl2word.extract import extract_workbook; from xl2word.layout import LayoutPlan; from xl2word.docx_write import write_docx; wb=extract_workbook('<input.xlsx>','<work>',render=False); write_docx(wb, LayoutPlan.from_json(open('<work>/layout.json').read()), '<out.docx>', images_dir='<work>/images')"`
+
+## 4. Verify (loop until clean)
+
+1. **Data integrity.** For every number you authored into a `keyvalue`/`bullets`/`note`, confirm it appears in the source sheet's cells. A number in the doc that is not in the sheet is a bug; fix it.
+2. **Visual.** Render to images: `python -c "from xl2word.verify import render_doc; print(render_doc('<out.docx>', '<work>/verify'))"`. Walk every page: is each section present, does each table sit on one page with no clipped columns, are settings/notes rendered as key-value/bullets (not crammed grids), are merges intact, and does it read like documentation rather than a scrape? Fix the plan and re-render. Do not stop at the first pass.
 
 ## Reproducibility
-Save the approved `layout.json` next to the source. For a new version of the same sheet, reuse it: re-run stage 1 then stage 4 with the saved `--layout`, then a quick stage 5 pass. Same structure, fresh data.
+
+Save the approved `layout.json` next to the source. For a new revision of the same workbook, reuse it: re-extract, then render with the saved plan and do a quick verify. Same structure, fresh data.

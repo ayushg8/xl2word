@@ -1,0 +1,1310 @@
+{
+ "title": "JASxIBC P-1000 50Ah Mid-Ni Process Doc (Rev 7)",
+ "blocks": [
+  {
+   "kind": "heading",
+   "text": "Revision Log",
+   "level": 1
+  },
+  {
+   "kind": "table",
+   "caption": "Revision history",
+   "region": [
+    2,
+    2,
+    3,
+    5
+   ],
+   "sheet": "Revision Log",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "June 2026 Graphite Trials"
+  },
+  {
+   "kind": "table",
+   "region": [
+    5,
+    8,
+    8,
+    11
+   ],
+   "sheet": "Revision Log",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "text": "Material Spec",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Incoming quality control (IQC) specifications for all purchased raw materials, listing each supplier's CoA target alongside the measured sample value."
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Raw Materials for Anode"
+  },
+  {
+   "kind": "table",
+   "region": [
+    7,
+    2,
+    38,
+    8
+   ],
+   "sheet": "Material Spec",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Raw Materials for Cathode"
+  },
+  {
+   "kind": "table",
+   "region": [
+    7,
+    10,
+    44,
+    16
+   ],
+   "sheet": "Material Spec",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Raw Materials for Electrode, Cell Assembly, and Shipping"
+  },
+  {
+   "kind": "table",
+   "region": [
+    48,
+    2,
+    85,
+    9
+   ],
+   "sheet": "Material Spec",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "text": "Anode Mix",
+   "level": 1
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pre-set Conditions"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Room Dew Point (\u00b0C)",
+     "<-20"
+    ],
+    [
+     "Room Temperature (\u00b0C)",
+     "23"
+    ],
+    [
+     "Chiller Temperature (\u00b0C)",
+     "13"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Raw Materials"
+  },
+  {
+   "kind": "table",
+   "region": [
+    6,
+    7,
+    12,
+    14
+   ],
+   "sheet": "Anode Mix",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "note",
+   "text": "Batch totals: Solid content 50.0%, Total mass 83.30 kg, Total volume 59.5 L."
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Slurry Quality Metrics"
+  },
+  {
+   "kind": "table",
+   "region": [
+    14,
+    2,
+    20,
+    5
+   ],
+   "sheet": "Anode Mix",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Additional Notes on Anode Mixing"
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Viscosity is the primary metric to achieve within target value.",
+    "When adding powder, ramp up agitation speed from the lowest setting (5/100 rpm) and increase in 2 to 5 or 100 rpm increments until all loose powder is incorporated. Start with Dispersion blade. Scrape the agitation blades after every powder addition step (i.e. graphite, Super-P).",
+    "Pay close attention to the slurry temperature - very important for meeting the viscosity target consistently.",
+    "Make sure the chiller is always connected to the main tank and running.",
+    "Viscosity can increase after degassing step.",
+    "For other troubleshooting, refer to the \"OCAP\" tab."
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Anode Recipe Steps - Single Vessel Mix"
+  },
+  {
+   "kind": "table",
+   "region": [
+    24,
+    2,
+    39,
+    14
+   ],
+   "sheet": "Anode Mix",
+   "orientation": "landscape"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Cleaning and Maintenance"
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Cleaning: Clean the mixer and other reusables (between 2-3 operators it will take about 3-4 hour to complete). Fill the main mixer with water until dispersion blade is submerged and stir for 0.5-2 hours with moderate heating (30-40\u00b0C? let the vapor clean the mixer ceiling). Remove the dispenser valve for cleaning. Water wipe then acetone to dry.",
+    "Maintenance: Yearly maintenance is recommended to change dispersion rotor bearing and motor belt."
+   ]
+  },
+  {
+   "kind": "heading",
+   "text": "Anode PressSlit",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Process settings and quality targets for the anode pressing (calendering) and slitting steps."
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pre-set Conditions"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Room Dew Point (\u00b0C)",
+     "<-20"
+    ],
+    [
+     "Room Temperature (\u00b0C)",
+     "23"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pressing Process Conditions"
+  },
+  {
+   "kind": "table",
+   "region": [
+    6,
+    7,
+    19,
+    10
+   ],
+   "sheet": "Anode PressSlit",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pressing Results"
+  },
+  {
+   "kind": "table",
+   "region": [
+    6,
+    12,
+    14,
+    15
+   ],
+   "sheet": "Anode PressSlit",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Slitting Process Conditions"
+  },
+  {
+   "kind": "table",
+   "region": [
+    25,
+    7,
+    37,
+    10
+   ],
+   "sheet": "Anode PressSlit",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Slitting Results"
+  },
+  {
+   "kind": "table",
+   "region": [
+    25,
+    12,
+    33,
+    15
+   ],
+   "sheet": "Anode PressSlit",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Notes"
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Same slitter as cathode.",
+    "Highlighted cells are variable parameters, adjusted every batch or as needed."
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Note on Anode Press/Slit maintenance"
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Every 300-500 meters, wipe the main roll and nip rolls with water then acetone on cleanroom wipes (anti-dust/static).",
+    "Anode main roll is equipped with a cleaning mechanism (scraper); however, this doesn't work very well and requires manual cleaning.",
+    "Guide roll (press + slit) needs cleaning about once a week.",
+    "Change the rolls as needed (defect or damage) and equip with spares.",
+    "Knife maintenance: replace when there is a chip or breakage."
+   ]
+  },
+  {
+   "kind": "heading",
+   "text": "Cathode Mix",
+   "level": 1
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pre-set Conditions"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Room Dew Point (\u00b0C)",
+     "<-20"
+    ],
+    [
+     "Room Temperature (\u00b0C)",
+     "23"
+    ],
+    [
+     "Chiller Temperature (\u00b0C)",
+     "7"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Raw Materials"
+  },
+  {
+   "kind": "table",
+   "region": [
+    6,
+    7,
+    12,
+    14
+   ],
+   "sheet": "Cathode Mix",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "note",
+   "text": "Batch totals: solid content 81.0%, total mass 94.923 kg, total volume 34.5 L."
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "KPI Output"
+  },
+  {
+   "kind": "table",
+   "region": [
+    14,
+    2,
+    20,
+    5
+   ],
+   "sheet": "Cathode Mix",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Additional Notes on Cathode Mixing"
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Viscosity is the primary metric to achieve within target value.",
+    "When adding powder, ramp up agitation speed from the lowest setting (5/100 rpm) and increase in 2 to 5 or 100 rpm increments until all loose powder is incorporated. Start with Dispersion blade. Scrape the agitation blades after every powder addition step (i.e. NMC, Super-P).",
+    "Pay close attention to the slurry temperature - very important for meeting the viscosity target consistently.",
+    "Make sure the chiller is always connected to the main tank and running.",
+    "Viscosity can increase after degassing step.",
+    "For other troubleshooting, refer to the \"OCAP\" tab."
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Cathode Recipe Steps"
+  },
+  {
+   "kind": "table",
+   "region": [
+    24,
+    2,
+    41,
+    14
+   ],
+   "sheet": "Cathode Mix",
+   "orientation": "landscape"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Cleaning and Maintenance"
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Cleaning: Clean the mixer, pre-mixer, and other reusables (between 2-3 operators it will take about 3-4 hour to complete). Water wipe to solidify the slurry residue and scrape off the solids. Remove the dispenser valve for cleaning. Finish off with acetone to dry.",
+    "Maintenance: Yearly maintenance is recommended to change dispersion rotor bearing and motor belt."
+   ]
+  },
+  {
+   "kind": "heading",
+   "text": "Cathode CoatDry",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Pre-set room and equipment conditions for cathode coating and drying, followed by the A-side and B-side coating, drying, and results parameters."
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pre-set Conditions"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Room Dew Point (\u00b0C)",
+     "<-45"
+    ],
+    [
+     "Room Temperature (\u00b0C)",
+     "23"
+    ],
+    [
+     "Foil Type",
+     "Al"
+    ],
+    [
+     "Al Foil Thickness (\u00b5m)",
+     "12"
+    ],
+    [
+     "Shim Width (mm)",
+     "232.5"
+    ],
+    [
+     "Shim Internal Angle (\u00b0)",
+     "84.5"
+    ],
+    [
+     "Shim Rounding",
+     "C 3/4"
+    ],
+    [
+     "Shim Thickness (T)",
+     "1.2"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Slurry Supply Unit"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Slurry Temperature (\u00b0C)",
+     "23"
+    ],
+    [
+     "Slurry Mixer Motor Speed (rpm)",
+     "20"
+    ],
+    [
+     "Overnight Slurry Circulation",
+     "NO"
+    ],
+    [
+     "Slurry Pump Servo Circulation (rpm)",
+     "20-30"
+    ],
+    [
+     "Slurry Pump Servo Side A (rpm)",
+     "35-37"
+    ],
+    [
+     "Slurry Pump Servo Side B (rpm)",
+     "35-37"
+    ],
+    [
+     "Magnetic Filter",
+     "YES"
+    ],
+    [
+     "Mesh Filter (\u00b5m)",
+     "125 (<115 \u00b5m)"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Cathode Coater Maintenance"
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Wipe the rollers when there is a change in slurry chemistry/composition.",
+    "Use acetone and cleanroom wipes (anti-dust/static) to wipe the rollers.",
+    "Change the rolls as needed (defect or damage) and equip with spares."
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "A Side"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Coating Process Conditions"
+  },
+  {
+   "kind": "table",
+   "region": [
+    21,
+    2,
+    35,
+    5
+   ],
+   "sheet": "Cathode CoatDry",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Drying Process Conditions"
+  },
+  {
+   "kind": "table",
+   "region": [
+    21,
+    7,
+    34,
+    10
+   ],
+   "sheet": "Cathode CoatDry",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Coating Results"
+  },
+  {
+   "kind": "table",
+   "region": [
+    21,
+    12,
+    26,
+    15
+   ],
+   "sheet": "Cathode CoatDry",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "B Side"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Process Conditions"
+  },
+  {
+   "kind": "table",
+   "region": [
+    41,
+    2,
+    55,
+    5
+   ],
+   "sheet": "Cathode CoatDry",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Drying Process Conditions"
+  },
+  {
+   "kind": "table",
+   "region": [
+    41,
+    7,
+    54,
+    10
+   ],
+   "sheet": "Cathode CoatDry",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Coating Results"
+  },
+  {
+   "kind": "table",
+   "region": [
+    41,
+    12,
+    50,
+    15
+   ],
+   "sheet": "Cathode CoatDry",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "text": "Cathode PressSlit",
+   "level": 1
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pre-set Conditions"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Room Dew Point (\u00b0C)",
+     "<-45"
+    ],
+    [
+     "Room Temperature (\u00b0C)",
+     "23"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pressing Process Conditions"
+  },
+  {
+   "kind": "note",
+   "text": "Highlighted parameters are variable: some are set every batch, others adjusted as needed."
+  },
+  {
+   "kind": "table",
+   "region": [
+    6,
+    7,
+    22,
+    10
+   ],
+   "sheet": "Cathode PressSlit",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pressing Results"
+  },
+  {
+   "kind": "table",
+   "region": [
+    6,
+    12,
+    13,
+    15
+   ],
+   "sheet": "Cathode PressSlit",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Slitting Process Conditions"
+  },
+  {
+   "kind": "table",
+   "region": [
+    26,
+    7,
+    38,
+    10
+   ],
+   "sheet": "Cathode PressSlit",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Slitting Results"
+  },
+  {
+   "kind": "table",
+   "region": [
+    26,
+    12,
+    35,
+    15
+   ],
+   "sheet": "Cathode PressSlit",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Maintenance Notes"
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Wipe all rollers about once a week, or when there is a change in slurry chemistry/composition, with acetone on cleanroom wipes (anti-dust/static).",
+    "Main roll can be cleaned once a month.",
+    "Guide roll (press + slit) needs cleaning about once a week.",
+    "Change the rolls as needed (defect or damage) and equip with spares.",
+    "Knife maintenance: replace when there is a chip or breakage."
+   ]
+  },
+  {
+   "kind": "heading",
+   "text": "Assembly",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Room conditions, process parameters, and inspection results for the seven-stage cell assembly line."
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pre-set Conditions"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Room Dew Point (\u00b0C)",
+     "<-45"
+    ],
+    [
+     "Room Temperature (\u00b0C)",
+     "23"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Assembly Sequence"
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "Winding and Vision System Check",
+    "JR Stacking",
+    "Pre Welding (Tab formation)",
+    "Insulation Taping",
+    "JR Insertion into Can",
+    "Main Welding",
+    "Can-Cap Welding, Hi-Pot Check, 3D Vision Check"
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "1. Winding + Vision Process Condition"
+  },
+  {
+   "kind": "table",
+   "caption": "Winding process parameters",
+   "region": [
+    14,
+    2,
+    43,
+    5
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Vision Check Results"
+  },
+  {
+   "kind": "table",
+   "region": [
+    14,
+    7,
+    29,
+    10
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "2. JR Stack Taping Process Conditions"
+  },
+  {
+   "kind": "table",
+   "region": [
+    47,
+    2,
+    51,
+    5
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Taping Results"
+  },
+  {
+   "kind": "table",
+   "region": [
+    47,
+    7,
+    49,
+    10
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "3. Pre-Welding (Tab Formation)"
+  },
+  {
+   "kind": "table",
+   "region": [
+    55,
+    2,
+    60,
+    5
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pre-Welding Results"
+  },
+  {
+   "kind": "table",
+   "region": [
+    55,
+    7,
+    59,
+    10
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "4. Insulation Taping Process Conditions"
+  },
+  {
+   "kind": "table",
+   "region": [
+    63,
+    2,
+    67,
+    5
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Insulation Taping Results"
+  },
+  {
+   "kind": "table",
+   "region": [
+    63,
+    7,
+    65,
+    10
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "5. Main Welding (Terminal to Cap Welding)"
+  },
+  {
+   "kind": "table",
+   "caption": "Process conditions",
+   "region": [
+    71,
+    2,
+    77,
+    5
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "table",
+   "caption": "Results",
+   "region": [
+    71,
+    7,
+    77,
+    10
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "JR Insertion into Can Process Conditions"
+  },
+  {
+   "kind": "table",
+   "caption": "Process conditions",
+   "region": [
+    81,
+    2,
+    83,
+    5
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "table",
+   "caption": "Results",
+   "region": [
+    81,
+    7,
+    83,
+    10
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Can-Cap Welding"
+  },
+  {
+   "kind": "table",
+   "caption": "Process conditions",
+   "region": [
+    89,
+    2,
+    105,
+    5
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "table",
+   "caption": "Results",
+   "region": [
+    89,
+    7,
+    99,
+    10
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Seal Pin Welding"
+  },
+  {
+   "kind": "table",
+   "caption": "Process conditions",
+   "region": [
+    111,
+    2,
+    118,
+    5
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "table",
+   "caption": "Results",
+   "region": [
+    111,
+    7,
+    121,
+    10
+   ],
+   "sheet": "Assembly",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "text": "Finishing",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "Cell finishing covers electrolyte fill, high-temperature wetting, pre-charging, and final sealing."
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pre-set Conditions"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Room Dew Point (\u00b0C)",
+     "<-45"
+    ],
+    [
+     "Room Temperature (\u00b0C)",
+     "23"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "1st Electrolyte Fill \u2014 Process Conditions"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Fill Quantity (g)",
+     "140"
+    ],
+    [
+     "Vacuum (Torr)",
+     "0.02"
+    ],
+    [
+     "Pressure (Torr)",
+     "75"
+    ],
+    [
+     "# Vacuum Cycles",
+     "2"
+    ],
+    [
+     "# Pressure Cycles",
+     "1"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "1st Electrolyte Fill \u2014 Results"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Mass Before Fill (g)",
+     "770"
+    ],
+    [
+     "Mass After Fill (g)",
+     "910"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "HT Wetting \u2014 Process Conditions"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Process Time (h)",
+     "24"
+    ],
+    [
+     "Temperature (\u00b0C)",
+     "45"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pre-Charging \u2014 Process Conditions"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Pre-Charge Time (min)",
+     "120"
+    ],
+    [
+     "Pressure (bar)",
+     "3.6"
+    ],
+    [
+     "Pre-Charge Current (mA)",
+     "5000 (0.1 C)"
+    ],
+    [
+     "Pre-Charge SOC (%)",
+     "20"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Pre-Charging \u2014 Results"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Cell Voltage (V)",
+     "3.5"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "text": "Formation",
+   "level": 1
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Room Conditions"
+  },
+  {
+   "kind": "keyvalue",
+   "pairs": [
+    [
+     "Room Dew Point (\u00b0C)",
+     "ambient"
+    ],
+    [
+     "Room Temperature (\u00b0C)",
+     "23"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "IR/OCV Check and Formation"
+  },
+  {
+   "kind": "prose",
+   "text": "The formation and quality-control sequence steps through IR/OCV checks, formation charge/discharge cycles, and a 15-day aging period."
+  },
+  {
+   "kind": "table",
+   "region": [
+    6,
+    7,
+    27,
+    15
+   ],
+   "sheet": "Formation",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Dimension + Weight Check (Post-Formation)"
+  },
+  {
+   "kind": "table",
+   "region": [
+    31,
+    7,
+    43,
+    10
+   ],
+   "sheet": "Formation",
+   "orientation": "portrait"
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Ready-to-Ship Criteria"
+  },
+  {
+   "kind": "bullets",
+   "items": [
+    "\u0394OCV is <0.5%.",
+    "2nd Formation Discharge (Step 3) Capacity is 48.5 Ah +/- 1.",
+    "IR5 is <0.8 mOhm.",
+    "Dimension and weight checks pass."
+   ]
+  },
+  {
+   "kind": "heading",
+   "text": "ElectrodeAssembly OCAP",
+   "level": 1
+  },
+  {
+   "kind": "prose",
+   "text": "This out-of-control action plan (OCAP) lists process issues that can be observed across electrode assembly, their spec limits, the corrective action to take, and a likelihood and severity rating for each."
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Rating Scales"
+  },
+  {
+   "kind": "prose",
+   "text": "The Likelihood and Severity columns in the table below use these three-point scales."
+  },
+  {
+   "kind": "keyvalue",
+   "caption": "Likelihood of occurrence (for a stable process)",
+   "pairs": [
+    [
+     "1",
+     "Rare occurrence"
+    ],
+    [
+     "2",
+     "Some occurrence"
+    ],
+    [
+     "3",
+     "Possibly encountering every batch"
+    ]
+   ]
+  },
+  {
+   "kind": "keyvalue",
+   "caption": "Severity of issue",
+   "pairs": [
+    [
+     "1",
+     "Minimal material loss"
+    ],
+    [
+     "2",
+     "Some material loss"
+    ],
+    [
+     "3",
+     "May require batch restart"
+    ]
+   ]
+  },
+  {
+   "kind": "heading",
+   "level": 2,
+   "text": "Out-of-Control Action Plan"
+  },
+  {
+   "kind": "table",
+   "region": [
+    1,
+    2,
+    34,
+    8
+   ],
+   "sheet": "ElectrodeAssembly OCAP",
+   "orientation": "portrait"
+  }
+ ]
+}
